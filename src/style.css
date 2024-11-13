@@ -1,0 +1,5 @@
+rt.katakana-terminator-rt::before { content: attr(data-rt); }
+rt.katakana-terminator-rt {
+  font-size: small;
+  color: purple
+}
