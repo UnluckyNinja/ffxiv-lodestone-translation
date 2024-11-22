@@ -1,6 +1,6 @@
 import { GM } from '$';
 import { useOptions } from './store'
-import _map from './map.json'
+import _map from '../map.json'
 const map = _map as [string, string][]
 const gameTextMap = new Map(map as [string, string][])
 const textHeadMap = Map.groupBy(map,(it)=>{
