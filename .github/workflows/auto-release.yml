@@ -1,0 +1,53 @@
+name: Release Drafter
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+    branches:
+      - main
+  # pull_request event is required only for autolabeler
+  pull_request:
+    # Only following types are handled by the action, but one can default to all as well
+    types: [opened, reopened, synchronize]
+  # pull_request_target event is required for autolabeler to support PRs from forks
+  # pull_request_target:
+  #   types: [opened, reopened, synchronize]
+
+
+permissions:
+  contents: read
+
+jobs:
+  update_release_draft:
+    permissions:
+      # write permission is required to create a github release
+      contents: write
+      # write permission is required for autolabeler
+      # otherwise, read permission is required at least
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install
+      - name: Build
+        run: bun run build
+      - name: Rename file
+        run: mv ./dist/adhoc-translate.user.js ./dist/adhoc-translate.${{ github.ref_name }}.user.js
+      - name: Update Release Draft
+        id: release-drafter
+        uses: release-drafter/release-drafter@v6
+        with:
+          publish: true
+          latest: true
+          prerelease: ${{ github.ref_name == 'main' }}
+      # Drafts your next Release notes as Pull Requests are merged into "master"
+      - uses: AButler/upload-release-assets@v3.0
+        with:
+          release-id: ${{ steps.release-drafter.outputs.id }}
+          repo-token: ${{ github.token }}
+          files: ./dist/adhoc-translate.${{ github.ref_name }}.user.js
