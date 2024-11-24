@@ -40,6 +40,9 @@ jobs:
     - name: Update Release Draft
       id: release-drafter
       uses: release-drafter/release-drafter@v6
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       with:
         publish: true
         latest: true
@@ -48,5 +51,5 @@ jobs:
     - uses: AButler/upload-release-assets@v3.0
       with:
         release-id: ${{ steps.release-drafter.outputs.id }}
-        repo-token: ${{ github.token }}
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
         files: ./dist/adhoc-translate.${{ github.ref_name }}.user.js
