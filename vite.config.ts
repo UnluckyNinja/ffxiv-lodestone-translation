@@ -3,9 +3,9 @@ import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
 import UnoCSS from 'unocss/vite'
 import monkey from 'vite-plugin-monkey'
+import Inspect from 'vite-plugin-inspect'
 
-// https://vite.dev/config/
-export default defineConfig({
+export default defineConfig((config)=>({
   plugins: [
     vue(),
     UnoCSS(),
@@ -15,7 +15,8 @@ export default defineConfig({
         '@vueuse/core'
       ],
     }),
-    monkey({
+    // import text file will cause error
+    config.mode === 'test' ? undefined : monkey({
       entry: 'src/main.ts',
       userscript: {
         icon: 'https://api.iconify.design/hugeicons:translation.svg?color=%230080ff',
@@ -33,5 +34,6 @@ export default defineConfig({
       //   },
       // },
     }),
+    Inspect()
   ],
-})
+}))

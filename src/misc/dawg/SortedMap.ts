@@ -2,23 +2,26 @@ import { binarySearch } from '../utils'
 
 type Comparator<K> = (a: K, b: K) => number
 
+/**
+ * Doesn't support multiple equal keys
+ */
 export class SortedMap<K, V> implements Map<K, V> {
-  private _keys: K[][]
+  private _keys: K[]
   private map: Map<K,V>
-  readonly compareFunc: Comparator<K[]>
+  readonly compareFunc: Comparator<K>
   constructor(comp: Comparator<K>, map?: Map<K,V>) {
-    this.compareFunc = (a, b)=>comp(a[0], b[0])
+    this.compareFunc = comp
     if (map) {
-      this.map = map
-      this._keys = [...map.keys().map(it=>[it])].sort(this.compareFunc)
-      for (let i = 0; i < this._keys.length-1; ++i) {
-        const e1 = this._keys[i];
-        const e2 = this._keys[i+1];
-        if (this.compareFunc(e1, e2) === 0) {
-          e1.push(...e2)
-          this._keys.splice(i+1, 1)
-        }
-      }
+      this.map = new Map(map)
+      this._keys = [...map.keys()].sort(this.compareFunc)
+      // for (let i = 0; i < this._keys.length-1; ++i) {
+      //   const e1 = this._keys[i];
+      //   const e2 = this._keys[i+1];
+      //   if (this.compareFunc(e1, e2) === 0) {
+      //     e1.push(...e2)
+      //     this._keys.splice(i+1, 1)
+      //   }
+      // }
     } else {
       this.map = new Map<K,V>()
       this._keys = []
@@ -30,18 +33,19 @@ export class SortedMap<K, V> implements Map<K, V> {
   }
   delete(key: K): boolean {
     if (this.has(key)) {
-      const pos = binarySearch(this._keys, [key], this.compareFunc)
+      const pos = binarySearch(this._keys, key, this.compareFunc)
       this.map.delete(key)
-      const item = this._keys[pos]
-      for (let i = 0; i < item.length; ++i) {
-        if (item[i] === key) {
-          item.splice(i, 1)
-          break
-        }
-      }
-      if (item.length === 0) {
-        this._keys.splice(pos, 1) // remove empty array
-      }
+      this._keys.splice(pos, 1)
+      // const item = this._keys[pos]
+      // for (let i = 0; i < item.length; ++i) {
+      //   if (item[i] === key) {
+      //     item.splice(i, 1)
+      //     break
+      //   }
+      // }
+      // if (item.length === 0) {
+      //   this._keys.splice(pos, 1) // remove empty array
+      // }
       return true
     } else {
       return false
@@ -59,11 +63,12 @@ export class SortedMap<K, V> implements Map<K, V> {
   }
   set(key: K, value: V): this {
     if (!this.map.has(key)) {
-      const toInsert = binarySearch(this._keys, [key], this.compareFunc)
-      if (toInsert < 0) {
-        this._keys.splice(~toInsert, 0, [key])
+      const pos = binarySearch(this._keys, key, this.compareFunc)
+      if (pos < 0) {
+        this._keys.splice(~pos, 0, key)
       } else {
-        this._keys[toInsert].push(key)
+        this.map.delete(this._keys[pos])
+        this._keys[pos] = key
       }
     }
     this.map.set(key, value)
@@ -73,30 +78,64 @@ export class SortedMap<K, V> implements Map<K, V> {
     return this.map.size
   }
   *entries(): MapIterator<[K, V]> {
-    for (const karr of this._keys) {
-      for (const k of karr) {
-        yield [k, this.map.get(k) as V]
-      }
+    for (let i = 0; i < this._keys.length; ++i){
+      const item = this._keys[i]
+      yield [item, this.map.get(item)!]
+      // if (arr.length === 1) {
+      //   yield [arr[0], this.map.get(arr[0])!]
+      //   continue
+      // }
+      // for (let j = 0; j < arr.length; ++j) {
+      //   const k = arr[j]
+      //   yield [k, this.map.get(k)!]
+      // }
     }
   }
   *keys(): MapIterator<K> {
-    for (const karr of this._keys) {
-      for (const k of karr) {
-        yield k
-      }
+    for (let i = 0; i < this._keys.length; ++i){
+      const item = this._keys[i]
+      yield item
+      // if (arr.length === 1) {
+      //   yield arr[0]
+      //   continue
+      // }
+      // for (let j = 0; j < arr.length; ++j) {
+      //   yield arr[j]
+      // }
     }
   }
   *values(): MapIterator<V> {
-    for (const karr of this._keys) {
-      for (const k of karr) {
-        yield this.map.get(k) as V
-      }
+    for (let i = 0; i < this._keys.length; ++i){
+      const item = this._keys[i]
+      yield this.map.get(item)!
+      // if (arr.length === 1) {
+      //   yield this.map.get(arr[0])!
+      //   continue
+      // }
+      // for (let j = 0; j < arr.length; ++j) {
+      //   yield this.map.get(arr[j])!
+      // }
     }
+  }
+  keyAt(index: number): K | undefined {
+    return this._keys[index]
+  }
+  valueAt(index: number): V | undefined {
+    return this.map.get(this._keys[index])
+  }
+  entryAt(index: number): [K, V] | [undefined, undefined] {
+    return [this._keys[index], this.map.get(this._keys[index])!]
   }
   [Symbol.iterator](): MapIterator<[K, V]> {
     return this.entries()
   }
   get [Symbol.toStringTag](): string {
-    return this.toString()
+    return 'SortedMap'
+  }
+  clone() {
+    const newOne = new SortedMap<K,V>(this.compareFunc)
+    newOne._keys = this._keys.slice()
+    newOne.map = new Map(this.map)
+    return newOne
   }
 }

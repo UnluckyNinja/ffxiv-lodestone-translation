@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useOptions } from '../store';
+import { useOptions } from '../misc/store';
 
 
 const {

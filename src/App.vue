@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Options from './components/Options.vue'
-import { remap } from './utils';
+import { remap } from './misc/utils';
 const { x, y } = useMouse({type: 'client'})
 const root = ref(null)
 const { top, bottom, left, right} = useElementBounding(root)

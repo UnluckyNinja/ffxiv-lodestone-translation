@@ -10,14 +10,19 @@ interface Result {
   end: number
 }
 
-export function useDualDAWG(patterns: string[]) {
+export function useDualDAWG(patterns: string[] | string) {
   // let list 
   // if (Array.isArray(patterns)) {
   //   list = patterns.flatMap(it=>it[0])
   // } else {
   //   list = [...patterns.keys()]
   // }
-  const trie = new TrieAutomaton(patterns)
+  let trie: TrieAutomaton
+  if (typeof(patterns) === 'string') {
+    trie = TrieAutomaton.from(patterns)
+  } else {
+    trie = new TrieAutomaton(patterns)
+  }
   function findWords(text: string) {
     const wordLength = text.length
     const compareFunc = createCompareByLeftPos(wordLength)

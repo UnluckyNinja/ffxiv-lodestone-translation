@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { binarySearch, sortWordsByLength, sortWordsByLocale } from './utils'
+import { atou, binarySearch, sortWordsByLength, sortWordsByLocale, utoa } from './utils'
 
 const words = [
   'bc',
@@ -40,4 +40,14 @@ test('binarySearch', () => {
   expect(binarySearch(array, 3.5, (a,b)=>a-b)).toBe(~4)
   expect(binarySearch(array, -1, (a,b)=>a-b)).toBe(~0)
   expect(binarySearch(array, 11, (a,b)=>a-b)).toBe(~11)
+})
+
+test('atou utoa', () => {
+  const array = ['测试']
+  const str1 = JSON.stringify(array)
+  const base64 = utoa(str1)
+  const str2 = atou(base64)
+  const arr = JSON.parse(str2)
+  expect(str1 === str2).toBe(true)
+  expect(Array.isArray(arr)).toBe(true)
 })

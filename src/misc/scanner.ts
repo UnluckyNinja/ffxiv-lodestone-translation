@@ -1,28 +1,12 @@
 import { GM } from '$';
+import { getBuiltinTranslation, matchKatakanaOrTerm } from './gameText';
 import { useOptions } from './store'
-import _map from '../map.json'
-const map = _map as [string, string][]
-const gameTextMap = new Map(map as [string, string][])
-const textHeadMap = Map.groupBy(map,(it)=>{
-  return it[0].charAt(0)
-})
-textHeadMap.forEach(list=>{
-  list.sort((a,b)=>{
-    let compare = b[0].length - a[0].length
-    if (compare === 0) {
-      compare = b[0].localeCompare(a[0])
-    }
-    return compare
-  })
-})
-// console.log(textHeadMap)
 
 /** 
  * Credit: 片假名终结者 https://greasyfork.org/zh-CN/scripts/33268-katakana-terminator/ 
  */
-var queue: Record<string, [HTMLElement, HTMLElement]> = reactive({});  // {"カタカナ": [rtNodeA, rtNodeB]}
-var cachedTranslations: Record<string, string> = {};  // {"ターミネーター": "Terminator"}
-var newNodes: Node[] = [document.body];
+const queue: Map<string, HTMLElement[]> = reactive(new Map());  // {"カタカナ": [rtNodeA, rtNodeB]}
+var cachedTranslations: Map<string, string> = new Map();  // {"ターミネーター": "Terminator"}
 
 export function scanTextNodes(node: Node) {
   const { matchSelectors } = useOptions()
@@ -40,7 +24,7 @@ export function scanTextNodes(node: Node) {
       if (target.tagName.toLowerCase() in excludeTags || target.isContentEditable) {
         return;
       }
-      return target.childNodes.forEach(scanTextNodes);
+      return [...target.childNodes.values()].forEach(scanTextNodes);
 
     case Node.TEXT_NODE:
       if (node.parentElement) {
@@ -51,100 +35,49 @@ export function scanTextNodes(node: Node) {
         if (!matched) return
       }
       let text : Text | boolean = node as Text
-      while ((text = addRuby(text)));
+      addRuby(text);
   }
 }
-function escapeRegex(str: string) {
-  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
-}
+// function escapeRegex(str: string) {
+//   return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+// }
 
 export function addRuby(node: Text) {
   if (!node.nodeValue) {
     return false;
   }
-  const { customTranslations } = useOptions()
-  let katakana = /[\u30A1-\u30FA\u30FD-\u30FF][\u3099\u309A\u30A1-\u30FF]*[\u3099\u309A\u30A1-\u30FA\u30FC-\u30FF]|[\uFF66-\uFF6F\uFF71-\uFF9D][\uFF65-\uFF9F]*[\uFF66-\uFF9F]/y;
-  let match = null
-  let lastIndex = 0
-  while (!match && lastIndex < node.nodeValue.length) {
-    if (textHeadMap.has(node.nodeValue.charAt(0))) {
-      const list = textHeadMap.get(node.nodeValue.charAt(0))!
-      for (const it of list) {
-        const regex = new RegExp(escapeRegex(it[0]), 'y')
-        regex.lastIndex = lastIndex
-        match = regex.exec(node.nodeValue!)
-        if (match) break
-      }
-    }
-    if (!match){
-      for (const [k] of Object.entries(customTranslations.value)) {
-        const regex = new RegExp(escapeRegex(k), 'y')
-        regex.lastIndex = lastIndex
-        match = regex.exec(node.nodeValue!)
-        if (match) break
-      }
-    }
-    katakana.lastIndex = lastIndex
-    match = match || katakana.exec(node.nodeValue)
-    ++lastIndex;
-  }
-  if (!match) {
-    return false
-  }
-  let ruby = document.createElement('ruby');
-  ruby.appendChild(document.createTextNode(match[0]));
-  let rt = document.createElement('rt');
-  rt.classList.add('katakana-terminator-rt');
-  ruby.appendChild(rt);
+  const matches = matchKatakanaOrTerm(node.nodeValue)
+  if (matches.length === 0) return false
+  while (matches.length > 0) {
+    // create ruby & rt element
+    const match = matches.pop()!
+    const matchedValue = node.nodeValue.slice(match.start, match.end)
+    let ruby = document.createElement('ruby');
+    ruby.appendChild(document.createTextNode(matchedValue));
+    ruby.classList.add('userscript-translation-ruby');
+    let rt = document.createElement('rt');
+    rt.classList.add('userscript-translation-rt');
+    ruby.appendChild(rt);
 
-  // Append the ruby title node to the pending-translation queue
-  queue[match[0]] = queue[match[0]] || [];
-  queue[match[0]].push(rt);
+    // Append the ruby title node to the pending-translation queue
+    const list = queue.get(matchedValue) ?? []
+    list.push(rt)
+    queue.set(matchedValue, list)
 
-  // <span>[startカナmiddleテストend]</span> =>
-  // <span>start<ruby>カナ<rt data-rt="Kana"></rt></ruby>[middleテストend]</span>
-  let after = node.splitText(match.index);
-  node.parentNode!.insertBefore(ruby, after);
-  after.nodeValue = after.nodeValue!.substring(match[0].length);
-  return after;
+    // <span>[startカナmiddleテストend]</span> =>
+    // <span>start<ruby>カナ<rt data-rt="Kana"></rt></ruby>[middleテストend]</span>
+    let after = node.splitText(match.start);
+    node.parentNode!.insertBefore(ruby, after);
+    after.nodeValue = after.nodeValue!.substring(match.end - match.start);
+  }
 }
 
 // Split word list into chunks to limit the length of API requests
-export function translateTextNodes() {
-  var apiRequestCount = 0;
-  var phraseCount = 0;
-  var chunkSize = 200;
-  var chunk = [];
-
-  for (var phrase in queue) {
-      phraseCount++;
-      if (phrase in cachedTranslations) {
-          updateRubyByCachedTranslations(phrase);
-          continue;
-      }
-
-      chunk.push(phrase);
-      if (chunk.length >= chunkSize) {
-          apiRequestCount++;
-          googleTranslate('ja', 'en', chunk);
-          chunk = [];
-      }
-  }
-
-  if (chunk.length) {
-      apiRequestCount++;
-      googleTranslate('ja', 'en', chunk);
-  }
-
-  if (phraseCount) {
-      console.debug('Katakana Terminator:', phraseCount, 'phrases translated in', apiRequestCount, 'requests, frame', window.location.href);
-  }
-}
 let lastRequestTime = 0
 export async function translateTextNodesAlt() {
   let apiRequestCount = 0
   let phraseCount = 0
-  const chunkLimit = 100
+  const chunkLimit = 50
   const chunk: string[] = []
 
   const {enableGoogleTranslate} = useOptions()
@@ -152,21 +85,21 @@ export async function translateTextNodesAlt() {
 
   async function flushChunk() {
     if (chunk.length === 0) return
-    if (Date.now() - lastRequestTime < 1000){
-      await new Promise((r)=>setTimeout(r, 1000-(Date.now() - lastRequestTime)))
+    if (Date.now() - lastRequestTime < 2000){
+      await new Promise((r)=>setTimeout(r, 2000-(Date.now() - lastRequestTime)))
     }
     apiRequestCount++;
     await googleTranslate('ja', 'en', chunk.slice());
     chunk.splice(0);
   }
 
-  for (let phrase in queue) {
-    phraseCount++
+  for (let phrase of queue.keys()) {
 
     if (getTranslation(phrase)) {
       updateRubyByCachedTranslations(phrase)
     } else {
       if (!enableGoogleTranslate.value) continue
+      phraseCount++
       chunk.push(phrase);
       if (chunk.length >= chunkLimit) {
         await flushChunk()
@@ -177,7 +110,7 @@ export async function translateTextNodesAlt() {
   await flushChunk()
 
   if (phraseCount) {
-    console.debug('Katakana Terminator:', phraseCount, 'phrases translated in', apiRequestCount, 'requests, frame', window.location.href);
+    console.debug('FF14 Lodestone 自动翻译:', phraseCount, 'phrases translated in', apiRequestCount, 'requests, frame', window.location.href);
   }
 }
 
@@ -192,7 +125,7 @@ export function buildQueryString(params: Record<string, string>) {
 export async function googleTranslate(srcLang: string, destLang: string, phrases: string[]) {
   // Prevent duplicate HTTP requests before the request completes
   phrases.forEach(function(phrase) {
-      delete cachedTranslations[phrase]
+      cachedTranslations.delete(phrase)
   });
 
   var joinedText = phrases.join('\n').replace(/\s+$/, ''),
@@ -212,27 +145,26 @@ export async function googleTranslate(srcLang: string, destLang: string, phrases
           try {
               var resp = JSON.parse(dom.responseText.replace("'", '\u2019'));
           } catch (err) {
-              console.error('Katakana Terminator: invalid response', dom.responseText);
+              console.error('FF14 Lodestone 自动翻译: invalid response', dom.responseText);
               return;
           }
           resp[0].forEach(function(item: string[]) {
               var translated = item[0].replace(/\s+$/, ''),
                   original   = item[1].replace(/\s+$/, '');
-              cachedTranslations[original] = translated;
+              cachedTranslations.set(original, translated)
               updateRubyByCachedTranslations(original);
           });
       },
       onerror: function(dom) {
-          console.error('Katakana Terminator: request error', dom.statusText);
+          console.error('FF14 Lodestone 自动翻译: request error', dom.statusText);
       },
   });
 }
 
 
 export function getTranslation(phrase: string){
-  const { customTranslations } = useOptions()
-  
-  return customTranslations.value[phrase] || gameTextMap.get(phrase) || cachedTranslations[phrase]
+
+  return getBuiltinTranslation(phrase) || cachedTranslations.get(phrase)
 }
 
 // Clear the pending-translation queue
@@ -241,18 +173,25 @@ export function updateRubyByCachedTranslations(phrase: string) {
   if (!translated) {
       return;
   }
-  (queue[phrase] || []).forEach(function(node) {
+  queue.get(phrase)?.forEach((node)=>{
       node.dataset.rt = translated
-  });
-  delete queue[phrase];
+  })
+  queue.delete(phrase)
 }
 
 // Watch newly added DOM nodes, and save them for later use
 export function mutationHandler(mutationList: MutationRecord[]) {
   mutationList.forEach(function(mutationRecord) {
       mutationRecord.addedNodes.forEach(function(node) {
-        newNodes.push(node);
+        scanTextNodes(node);
       });
   });
-  return newNodes
+}
+
+export async function rescanTextNodes(observer: MutationObserver) {
+    // Deplete buffered mutations
+    mutationHandler(observer.takeRecords());
+
+    await translateTextNodesAlt();
+    setTimeout(()=>rescanTextNodes(observer), 500)
 }

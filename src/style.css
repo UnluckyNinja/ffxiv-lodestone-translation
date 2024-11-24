@@ -1,5 +1,8 @@
-rt.katakana-terminator-rt::before { content: attr(data-rt); }
-rt.katakana-terminator-rt {
+rt.userscript-translation-rt::before { content: attr(data-rt); }
+rt.userscript-translation-rt {
   font-size: small;
   color: purple
+}
+ruby.userscript-translation-ruby {
+  font-size: inherit;
 }
