@@ -47,6 +47,7 @@ jobs:
         publish: true
         latest: true
         prerelease: ${{ github.ref_name == 'main' }}
+        prerelease-identifier: 'alpha'
 
     - uses: AButler/upload-release-assets@v3.0
       with:
