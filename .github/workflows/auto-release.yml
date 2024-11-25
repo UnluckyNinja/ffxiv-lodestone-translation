@@ -44,11 +44,12 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       with:
+        name: ${{ github.ref_name }}
+        tag: ${{ github.ref_name }}
         publish: true
         latest: true
-        version: ${{  github.ref_type == 'tag' && github.ref_name || null }}
+        version: ${{ github.ref_type == 'tag' && github.ref_name || null }}
         prerelease: ${{ github.ref_name == 'main' }}
-        prerelease-identifier: 'alpha'
 
     - uses: AButler/upload-release-assets@v3.0
       with:
