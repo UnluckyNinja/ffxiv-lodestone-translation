@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import './style.css'
+import './assets/index.css'
 import 'virtual:uno.css'
 import App from './App.vue'
 import { mutationHandler, rescanTextNodes, scanTextNodes } from './misc/scanner'

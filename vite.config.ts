@@ -4,6 +4,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import UnoCSS from 'unocss/vite'
 import monkey from 'vite-plugin-monkey'
 import Inspect from 'vite-plugin-inspect'
+import { fileURLToPath } from 'node:url'
 
 export default defineConfig((config)=>({
   plugins: [
@@ -36,4 +37,10 @@ export default defineConfig((config)=>({
     }),
     Inspect()
   ],
+  
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  }
 }))
