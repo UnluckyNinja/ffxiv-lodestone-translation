@@ -46,6 +46,7 @@ jobs:
       with:
         publish: true
         latest: true
+        version: ${{  github.ref_type == 'tag' && github.ref_name || null }}
         prerelease: ${{ github.ref_name == 'main' }}
         prerelease-identifier: 'alpha'
 
