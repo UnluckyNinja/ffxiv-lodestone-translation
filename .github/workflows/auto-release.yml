@@ -32,29 +32,39 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
-
-    - name: Update Release Draft
-      id: release-drafter
-      uses: release-drafter/release-drafter@v6
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+        
+    - name: Release Please Action
+      id: release-please
+      uses: googleapis/release-please-action@v4
       with:
-        tag: ${{ github.ref_name == 'main' && 'alpha' || github.ref_name }}
-        commitish: ${{ github.ref }}
-        version: ${{ github.ref_type == 'tag' && github.ref_name || null }}
-        publish: true
-        latest: true
-        prerelease: ${{ github.ref_name == 'main' }}
-        prerelease-identifier: 'alpha'
+        release-type: node
+        target-branch: ${{ github.ref_name }}
+
+    # - name: Update Release Draft
+    #   id: release-drafter
+    #   uses: release-drafter/release-drafter@v6
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     CHANGELOG_REF: ${{ github.ref_name == 'main' && 'alpha' || github.ref_name }}
+    #   with:
+    #     tag: ${{ github.ref_name == 'main' && 'alpha' || github.ref_name }}
+    #     commitish: ${{ github.ref }}
+    #     version: ${{ github.ref_type == 'tag' && github.ref_name || null }}
+    #     publish: true
+    #     prerelease: ${{ github.ref_name == 'main' }}
+    #     prerelease-identifier: 'alpha'
 
     - name: Install dependencies
       run: pnpm install && pnpm build
+      if: ${{ steps.release-please.outputs.release_created }}
       env:
-        RESOLVED_VERSION: ${{ steps.release-drafter.outputs.resolved_version }}
+        RESOLVED_VERSION: >-
+          ${{ steps.release-please.outputs.major }}.${{ steps.release-please.outputs.minor }}.${{ steps.release-please.outputs.patch }}
 
-    - uses: AButler/upload-release-assets@v3.0
+    - name: Upload file
+      uses: AButler/upload-release-assets@v3.0
+      if: ${{ steps.release-please.outputs.release_created }}
       with:
-        release-id: ${{ steps.release-drafter.outputs.id }}
+        release-tag: ${{ steps.release-please.outputs.tag_name }}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         files: ./dist/adhoc-translate.user.js
