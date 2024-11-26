@@ -80,7 +80,7 @@ export async function translateTextNodesAlt() {
   const chunkLimit = 50
   const chunk: string[] = []
 
-  const {enableGoogleTranslate} = useOptions()
+  const {enableGoogleTranslate, katakanaLanguage} = useOptions()
 
 
   async function flushChunk() {
@@ -89,7 +89,7 @@ export async function translateTextNodesAlt() {
       await new Promise((r)=>setTimeout(r, 2000-(Date.now() - lastRequestTime)))
     }
     apiRequestCount++;
-    await googleTranslate('ja', 'en', chunk.slice());
+    await googleTranslate('ja', katakanaLanguage.value, chunk.slice());
     chunk.splice(0);
   }
 

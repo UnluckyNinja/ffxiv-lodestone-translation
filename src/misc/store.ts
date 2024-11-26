@@ -17,17 +17,20 @@ export const useOptions = createGlobalState(
     const enableGoogleTranslate = useStorage('enableGoogleTranslate', true, storage)
     const customTranslations = useStorage('customTranslations', {} as Record<string, string>, storage)
     const matchSelectors = useStorage('matchSelectors', ['article *'] as string[], storage)
+    const katakanaLanguage = useStorage('googleLanguage', 'en', storage)
 
     function resetOptions(){
       enableGoogleTranslate.value = true
       customTranslations.value = {}
-      matchSelectors.value = []
+      matchSelectors.value = ['article *']
+      katakanaLanguage.value = 'en'
     }
 
     return {
       enableGoogleTranslate,
       customTranslations,
       matchSelectors,
+      katakanaLanguage,
       resetOptions
     }
   }
