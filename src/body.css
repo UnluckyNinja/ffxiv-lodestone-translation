@@ -1,0 +1,11 @@
+rt.userscript-translation-rt::before { content: attr(data-rt); }
+rt.userscript-translation-rt {
+  font-size: 1em;
+  color: purple;
+  .news__header & {
+    color: lime;
+  }
+}
+ruby.userscript-translation-ruby {
+  font-size: inherit;
+}

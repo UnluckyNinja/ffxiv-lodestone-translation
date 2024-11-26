@@ -12,6 +12,7 @@
   "dependencies": {
     "@iconify-json/carbon": "^1.2.4",
     "@unhead/vue": "^1.11.11",
+    "@unocss/reset": "^0.64.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "fflate": "^0.8.2",
@@ -42,5 +43,10 @@
   "engine": {
     "node": ">=22.0.0"
   },
-  "packageManager": "pnpm@9.14.2+sha512.6e2baf77d06b9362294152c851c4f278ede37ab1eba3a55fda317a4a17b209f4dbb973fb250a77abc463a341fcb1f17f17cfa24091c4eb319cda0d9b84278387"
+  "packageManager": "pnpm@9.14.2+sha512.6e2baf77d06b9362294152c851c4f278ede37ab1eba3a55fda317a4a17b209f4dbb973fb250a77abc463a341fcb1f17f17cfa24091c4eb319cda0d9b84278387",
+  "pnpm": {
+    "patchedDependencies": {
+      "@unocss/vite": "patches/@unocss__vite.patch"
+    }
+  }
 }

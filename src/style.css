@@ -1,14 +1,5 @@
-rt.userscript-translation-rt::before { content: attr(data-rt); }
-rt.userscript-translation-rt {
-  font-size: small;
-  color: purple
-}
-ruby.userscript-translation-ruby {
-  font-size: inherit;
-}
-
 @layer base {
-  :root {
+  :host {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
   

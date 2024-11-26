@@ -5,10 +5,12 @@ import UnoCSS from 'unocss/vite'
 import monkey from 'vite-plugin-monkey'
 import Inspect from 'vite-plugin-inspect'
 import { fileURLToPath } from 'node:url'
+import Rexport from './plugin/rexport'
 
 export default defineConfig((config)=>({
   plugins: [
     vue(),
+    Rexport(),
     UnoCSS(),
     AutoImport({
       imports: [
