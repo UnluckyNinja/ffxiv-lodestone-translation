@@ -85,11 +85,12 @@ export async function translateTextNodesAlt() {
 
   async function flushChunk() {
     if (chunk.length === 0) return
-    if (Date.now() - lastRequestTime < 2000){
-      await new Promise((r)=>setTimeout(r, 2000-(Date.now() - lastRequestTime)))
+    if (Date.now() - lastRequestTime < 1000){
+      await new Promise((r)=>setTimeout(r, 1000-(Date.now() - lastRequestTime)))
     }
     apiRequestCount++;
     await googleTranslate('ja', katakanaLanguage.value, chunk.slice());
+    lastRequestTime = Date.now()
     chunk.splice(0);
   }
 
@@ -128,29 +129,32 @@ export async function googleTranslate(srcLang: string, destLang: string, phrases
       cachedTranslations.delete(phrase)
   });
 
-  var joinedText = phrases.join('\n').replace(/\s+$/, ''),
-      api = 'https://translate.googleapis.com/translate_a/single',
+  var api = 'https://translate.googleapis.com/translate_a/t',
       params = {
           client: 'gtx',
           dt: 't',
           sl: srcLang,
           tl: destLang,
-          q: joinedText,
+          format: 'html',
       };
-
+  const data = new URLSearchParams()
+  phrases.forEach(it=>{
+    data.append('q', it)
+  })
   return GM.xmlHttpRequest({
-      method: "GET",
+      method: "POST",
       url: api + buildQueryString(params),
+      data: data,
       onload: function(dom) {
           try {
-              var resp = JSON.parse(dom.responseText.replace("'", '\u2019'));
+              var resp = JSON.parse(dom.responseText/*.replace("'", '\u2019')*/) as string[];
           } catch (err) {
               console.error('FF14 Lodestone 自动翻译: invalid response', dom.responseText);
               return;
           }
-          resp[0].forEach(function(item: string[]) {
-              var translated = item[0].replace(/\s+$/, ''),
-                  original   = item[1].replace(/\s+$/, '');
+          resp.forEach(function(item: string, idx: number) {
+              var translated = item,
+                  original   = phrases[idx];
               cachedTranslations.set(original, translated)
               updateRubyByCachedTranslations(original);
           });
