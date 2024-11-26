@@ -1,14 +1,16 @@
 # Credits: https://blog.jromanmartin.io/2023/06/12/Improving-a-gh-repository.html
 # This release drafter follows the conventions from https://keepachangelog.com
 
-name-template: '$RESOLVED_VERSION'
-tag-template: '$RESOLVED_VERSION'
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
 template: |
   ## What Changed 👀
   
   $CHANGES
 
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
+no-changes-template: |
+  * See full changelog below.
 categories:
   - title: 🚀 Features
     labels:

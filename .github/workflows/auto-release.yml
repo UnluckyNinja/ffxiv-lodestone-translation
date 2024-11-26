@@ -3,7 +3,7 @@ name: Release Drafter
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
     branches:
       - main
 
@@ -32,10 +32,6 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
-    - name: Install dependencies
-      run: pnpm install && pnpm build
-    - name: Rename file
-      run: mv ./dist/adhoc-translate.user.js ./dist/adhoc-translate.${{ github.ref_name }}.user.js
 
     - name: Update Release Draft
       id: release-drafter
@@ -44,15 +40,18 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       with:
-        name: ${{ github.ref_name }}
-        tag: ${{ github.ref_name }}
         publish: true
         latest: true
-        version: ${{ github.ref_type == 'tag' && github.ref_name || null }}
         prerelease: ${{ github.ref_name == 'main' }}
+        prerelease-identifier: 'alpha'
+
+    - name: Install dependencies
+      run: pnpm install && pnpm build
+      env:
+        RESOLVED_VERSION: ${{ steps.release-drafter.outputs.resolved_version }}
 
     - uses: AButler/upload-release-assets@v3.0
       with:
         release-id: ${{ steps.release-drafter.outputs.id }}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        files: ./dist/adhoc-translate.${{ github.ref_name }}.user.js
+        files: ./dist/adhoc-translate.user.js

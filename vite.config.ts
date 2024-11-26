@@ -5,6 +5,7 @@ import UnoCSS from 'unocss/vite'
 import monkey from 'vite-plugin-monkey'
 import Inspect from 'vite-plugin-inspect'
 import { fileURLToPath } from 'node:url'
+import packgeJson from './package.json'
 import Rexport from './plugin/rexport'
 
 export default defineConfig((config)=>({
@@ -23,6 +24,7 @@ export default defineConfig((config)=>({
       entry: 'src/main.ts',
       userscript: {
         icon: 'https://api.iconify.design/hugeicons:translation.svg?color=%230080ff',
+        version: process.env.RESOLVED_VERSION ?? packgeJson.version,
         name: 'FF14 Lodestone 自动翻译',
         namespace: 'unlucky.ninja',
         author: 'UnluckyNinja',
