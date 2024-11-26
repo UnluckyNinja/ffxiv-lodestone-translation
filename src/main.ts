@@ -21,7 +21,7 @@ function addStyle(content: string){
   shadow.appendChild(cssEle)
   return cssEle
 }
-const resetEle = addStyle(resetCss)
+addStyle(resetCss)
 const unoEle = addStyle(unoCss)
 const styleEle = addStyle(styleCss)
 
