@@ -3,7 +3,7 @@ name: Release Drafter
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+'
     branches:
       - main
 
@@ -40,6 +40,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       with:
+        tag: ${{ github.ref_name == 'main' && 'alpha' || github.ref_name }}
+        commitish: ${{ github.ref }}
+        version: ${{ github.ref_type == 'tag' && github.ref_name || null }}
         publish: true
         latest: true
         prerelease: ${{ github.ref_name == 'main' }}
