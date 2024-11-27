@@ -1,0 +1,78 @@
+name: Build Preview for Pull Requests
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-preview:
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: 22
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Notify about starting this deployment
+        id: comment
+        uses: UnluckyNinja/comment-progress@v3.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          identifier: build-preview
+          message: "Building preview of this pull request."
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - run: pnpm install && pnpm build
+        id: build
+        continue-on-error: true
+        env:
+          RESOLVED_VERSION: 0.0.0+${{github.event.pull_request.number}}
+
+      - name: Upload Artifact
+        if: ${{ steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        id: artifact
+        with:
+          path: dist/ffxiv-lodestone-translator.user.js
+
+      - name: Notify about the result of this deployment if failed
+        if: ${{ steps.build.outcome != 'success' }}
+        uses: UnluckyNinja/comment-progress@v3.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-id: ${{ steps.comment.outputs.comment_id }}
+          identifier: build-preview
+          message: '❌Build failed'
+
+      - name: Notify about the result of this deployment if succeeded
+        if: ${{ steps.build.outcome == 'success' }}
+        uses: UnluckyNinja/comment-progress@v3.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-id: ${{ steps.comment.outputs.comment_id }}
+          identifier: build-preview
+          message: |
+            ✔Build succeeded.
+            ${{ github.event.pull_request.head.repo.full_name == github.repository && format('Preview: ${0}', steps.artifact.outputs.artifact-url) || 'PR is from another repo. Preview link is hidden. Check it in workflow panel.' }}
+
+      - name: Align status to failure if build failed.
+        if: ${{ steps.build.outcome == failure() }}
+        run: exit 1

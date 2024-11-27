@@ -2,8 +2,6 @@ name: Release Drafter
 
 on:
   push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
     branches:
       - main
 
@@ -14,6 +12,7 @@ permissions:
 jobs:
   update_release_draft:
     runs-on: ubuntu-latest
+    environment: Action to trigger other Action
     strategy:
       matrix:
         node-version: [22]
@@ -22,6 +21,8 @@ jobs:
       uses: actions/checkout@v4
     - name: Install pnpm
       uses: pnpm/action-setup@v4
+      with:
+        run_install: false
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
@@ -32,23 +33,9 @@ jobs:
       id: release-please
       uses: googleapis/release-please-action@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.ACTION_PAT }}
         release-type: node
         target-branch: ${{ github.ref_name }}
-
-    # - name: Update Release Draft
-    #   id: release-drafter
-    #   uses: release-drafter/release-drafter@v6
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     CHANGELOG_REF: ${{ github.ref_name == 'main' && 'alpha' || github.ref_name }}
-    #   with:
-    #     tag: ${{ github.ref_name == 'main' && 'alpha' || github.ref_name }}
-    #     commitish: ${{ github.ref }}
-    #     version: ${{ github.ref_type == 'tag' && github.ref_name || null }}
-    #     publish: true
-    #     prerelease: ${{ github.ref_name == 'main' }}
-    #     prerelease-identifier: 'alpha'
 
     - name: Install dependencies
       run: pnpm install && pnpm build

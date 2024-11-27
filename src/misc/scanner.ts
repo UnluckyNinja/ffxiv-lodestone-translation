@@ -115,13 +115,6 @@ export async function translateTextNodesAlt() {
   }
 }
 
-// {"keyA": 1, "keyB": 2} => "?keyA=1&keyB=2"
-export function buildQueryString(params: Record<string, string>) {
-  return '?' + Object.keys(params).map(function(k) {
-      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
-  }).join('&');
-}
-
 // Google Dictionary API, https://github.com/ssut/py-googletrans/issues/268
 export async function googleTranslate(srcLang: string, destLang: string, phrases: string[]) {
   // Prevent duplicate HTTP requests before the request completes
@@ -143,7 +136,7 @@ export async function googleTranslate(srcLang: string, destLang: string, phrases
   })
   return GM.xmlHttpRequest({
       method: "POST",
-      url: api + buildQueryString(params),
+      url: api + '?' + new URLSearchParams(params).toString(),
       data: data,
       onload: function(dom) {
           try {
