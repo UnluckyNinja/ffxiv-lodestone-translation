@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/compare/v1.1.0...v1.1.1) (2024-11-27)
+
+
+### Bug Fixes
+
+* build output ([8a246db](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/commit/8a246db4f5ba142ef87b83deccda310a5cf3a124))
+
 ## [1.1.0](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/compare/1.0.1...v1.1.0) (2024-11-26)
 
 
