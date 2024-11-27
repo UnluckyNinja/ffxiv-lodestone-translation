@@ -62,7 +62,7 @@ function removeSelector(k: number) {
         <div class="flex justify-end">
           <Tabs :default-value="katakanaLanguage">
             <TabsList class="grid grid-cols-2">
-              <TabsTrigger @click="katakanaLanguage = 'zh-CN'" class="data-[state=active]:bg-primary" value="zh-cn">
+              <TabsTrigger @click="katakanaLanguage = 'zh-CN'" class="data-[state=active]:bg-primary" value="zh-CN">
                 中文
               </TabsTrigger>
               <TabsTrigger @click="katakanaLanguage = 'en'" class="data-[state=active]:bg-primary" value="en">

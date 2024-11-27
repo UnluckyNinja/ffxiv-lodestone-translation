@@ -9,7 +9,6 @@ export default function createPlugin(): Plugin {
       return env.command === "serve" && !config.build?.ssr;
     },
     transform(code, id) {
-      
       const layer = resolveLayer(getPath(id));
       if (layer) {
         let head = `const __vite__id = "/__uno.css";

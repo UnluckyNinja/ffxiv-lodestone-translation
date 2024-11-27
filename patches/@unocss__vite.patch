@@ -1,32 +1,81 @@
 diff --git a/dist/index.mjs b/dist/index.mjs
-index 3c21e0e7246b6ecd916df9602e1627a0685ec4b9..818c17f698bca6223b91b7bca4c67b51ffa51db7 100644
+index 3c21e0e7246b6ecd916df9602e1627a0685ec4b9..b657726275649c43a4d1ff7ce187ffa10075ad76 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
-@@ -361,14 +361,14 @@ const VIRTUAL_ENTRY_ALIAS = [
+@@ -361,7 +361,7 @@ const VIRTUAL_ENTRY_ALIAS = [
  ];
  const LAYER_MARK_ALL = "__ALL__";
  const RESOLVED_ID_WITH_QUERY_RE = /[/\\]__uno(_.*?)?\.css(\?.*)?$/;
 -const RESOLVED_ID_RE = /[/\\]__uno(?:_(.*?))?\.css$/;
-+const RESOLVED_ID_RE = /[/\\]__uno(?:_(.*?))?\.css(?=(?:\?.*)?$)/;
++const RESOLVED_ID_RE = /[/\\]__uno(?:_(.*?))?\.css$)/;
  function resolveId(id) {
    if (id.match(RESOLVED_ID_WITH_QUERY_RE))
      return id;
-   for (const alias of VIRTUAL_ENTRY_ALIAS) {
-     const match = id.match(alias);
-     if (match) {
--      return match[1] ? `/__uno_${match[1]}.css` : "/__uno.css";
-+      return (match[1] ? `/__uno_${match[1]}.css` : "/__uno.css") + (match[2] ?? '');
-     }
+@@ -549,6 +549,8 @@ function GlobalModeBuildPlugin(ctx) {
+     return lastResult;
    }
- }
-@@ -819,6 +819,10 @@ function GlobalModeDevPlugin({ uno, tokens, tasks, flushTasks, affectedModules,
-           const mod = server.moduleGraph.getModuleById(id);
-           if (!mod)
-             return null;
-+          const match = id.match(RESOLVED_ID_WITH_QUERY_RE)
-+          if (match && match[2] && match[2].includes('inline')) {
-+            server.reloadModule(mod)
+   let replaced = false;
++  let inlined = false
++  let inliningCSS = ''
+   return [
+     {
+       name: "unocss:global:build:scan",
+@@ -579,6 +581,9 @@ function GlobalModeBuildPlugin(ctx) {
+       resolveId(id, importer) {
+         const entry = resolveId(id);
+         if (entry) {
++          if (entry.match(RESOLVED_ID_WITH_QUERY_RE)[2]) {
++            inlined = true
 +          }
-           return {
-             acceptedPath: mod.url,
-             path: mod.url,
+           const layer = resolveLayer(entry);
+           if (layer) {
+             vfsLayers.add(layer);
+@@ -639,7 +644,7 @@ function GlobalModeBuildPlugin(ctx) {
+           return null;
+         }
+         let { css } = await generateAll();
+-        const fakeCssId = `${viteConfig.root}/${chunk.fileName}-unocss-hash.css`;
++        const fakeCssId = `${viteConfig.root}/${chunk.fileName}-unocss-hash.css${inlined?'?inline':''}`;
+         css = await applyCssTransform(css, fakeCssId, options.dir, this);
+         const transformHandler = "handler" in cssPost.transform ? cssPost.transform.handler : cssPost.transform;
+         if (isLegacy) {
+@@ -683,7 +688,7 @@ function GlobalModeBuildPlugin(ctx) {
+         }
+         const result = await generateAll();
+         const importsLayer = result.getLayer(LAYER_IMPORTS) ?? "";
+-        const fakeCssId = `${viteConfig.root}/${chunk.fileName}-unocss-hash.css`;
++        const fakeCssId = `${viteConfig.root}/${chunk.fileName}-unocss-hash.css${inlined?'?inline':''}`;
+         const preflightLayers = ctx.uno.config.preflights?.map((i) => i.layer).concat(LAYER_PREFLIGHTS).filter(Boolean);
+         await Promise.all(preflightLayers.map((i) => result.setLayer(i, async (layerContent) => {
+           const preTransform = await applyTransformers(ctx, layerContent, fakeCssId, "pre");
+@@ -704,7 +709,7 @@ function GlobalModeBuildPlugin(ctx) {
+         }));
+         const css = await applyCssTransform(cssWithLayers.join(""), fakeCssId, options.dir, this);
+         const transformHandler = "handler" in cssPost.transform ? cssPost.transform.handler : cssPost.transform;
+-        await transformHandler.call({}, css, fakeCssId);
++        inliningCSS = await transformHandler.call({}, css, fakeCssId);
+       }
+     },
+     {
+@@ -713,7 +718,7 @@ function GlobalModeBuildPlugin(ctx) {
+       enforce: "post",
+       // rewrite the css placeholders
+       async generateBundle(options, bundle) {
+-        const checkJs = ["umd", "amd", "iife"].includes(options.format);
++        const checkJs = ["umd", "amd", "iife"].includes(options.format) || inlined;
+         const files = Object.keys(bundle).filter((i) => i.endsWith(".css") || checkJs && i.endsWith(".js"));
+         if (!files.length)
+           return;
+@@ -748,7 +753,11 @@ function GlobalModeBuildPlugin(ctx) {
+             const js = chunk.code.replace(HASH_PLACEHOLDER_RE, "");
+             chunk.code = await replaceAsync(js, LAYER_PLACEHOLDER_RE, async (_, layer) => {
+               replaced = true;
+-              const css = getLayer(layer.trim(), js);
++              if (inlined) {
++                css = getLayer(layer.trim(), inliningCSS.code);
++              } else {
++                css = getLayer(layer.trim(), js);
++              }
+               return css.replace(/\n/g, "").replace(/(?<!\\)(['"])/g, "\\$1");
+             });
+             Array.from(vfsLayers).forEach((layer) => {
