@@ -71,7 +71,7 @@ jobs:
           identifier: build-preview
           message: |
             ✔Build succeeded.
-            ${{ github.event.pull_request.head.repo.full_name == github.repository && format('Preview: ${0}', steps.artifact.outputs.artifact-url) || 'PR is from another repo. Preview link is hidden. Check it in workflow panel.' }}
+            ${{ github.event.pull_request.head.repo.full_name == github.repository && format('Preview: {0}', steps.artifact.outputs.artifact-url) || 'PR is from another repo. Preview link is hidden. Check it in workflow panel.' }}
 
       - name: Align status to failure if build failed.
         if: ${{ steps.build.outcome == failure() }}
