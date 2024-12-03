@@ -4,7 +4,9 @@ import { TrieAutomaton, TrieNode } from './trie'
 
 export type DAWGPatterns<T> = [string, T][] | Map<string, T>
 
-type WalkState = [number, number, TrieNode | null, boolean] //, string]
+type WalkState = [number, number, TrieNode | null, boolean
+  , string
+]
 interface Result {
   start: number,
   end: number
@@ -32,7 +34,9 @@ export function useDualDAWG(patterns: string[] | string) {
     let rightMostOfFinal = 0
     const result: Result[] = []
     walkSAM<WalkState>((samNode, state, queue)=>{
-      let [matched, matching, trieNode, final/*, prefix*/] = state
+      let [matched, matching, trieNode, final
+        , prefix
+      ] = state
       // final state
       if (final) {
         const start = wordLength - matching
@@ -72,7 +76,9 @@ export function useDualDAWG(patterns: string[] | string) {
 
       // postpone final state
       if (matched > 0 && finals.get(samNode.id)) {
-        insertQueue(samNode, [matched, matching, null, true/*, prefix*/])
+        insertQueue(samNode, [matched, matching, null, true
+          , prefix
+        ])
       }
       
       // trieNode === null -> partly matched only propagate to final state.
@@ -85,20 +91,28 @@ export function useDualDAWG(patterns: string[] | string) {
         for (const char of samNode.next.keys()) {
           const nextNode = trie.match(char, trieNode)
           if (nextNode) {
-            insertQueue(samNode.next.get(char)!, [matched, matching + 1, nextNode, false/*, prefix+char*/])
+            insertQueue(samNode.next.get(char)!, [matched, matching + 1, nextNode, false
+              , prefix+char
+            ])
           } else {
             if (matched > 0) {
-              insertQueue(samNode.next.get(char)!, [matched, matching + 1, null, false/*, prefix*/])
+              insertQueue(samNode.next.get(char)!, [matched, matching + 1, null, false
+                , prefix
+              ])
             }
           }
         }
       } else {
         for (const char of samNode.next.keys()) {
-          insertQueue(samNode.next.get(char)!, [matched, matching + 1, null, false/*, prefix*/])
+          insertQueue(samNode.next.get(char)!, [matched, matching + 1, null, false
+            , prefix
+          ])
         }
       }
       return queue
-    }, [sam.root, [0, 0, trie.root, false/*, ''*/]])
+    }, [sam.root, [0, 0, trie.root, false
+      , ''
+    ]])
     return result
   }
   return {
@@ -120,7 +134,10 @@ function createCompareByLeftPos(wordLength: number) {
       if (stateA[3] === false) return -1
       return 1
     }
-    if (samA.id !== samB.id) {
+    if (!stateA[3] && samA.len !== samB.len) {
+      return samA.len - samB.len
+    }
+    if (!stateA[3] && samA.id !== samB.id) {
       return samA.id - samB.id
     }
     // sort by starting point of matching
