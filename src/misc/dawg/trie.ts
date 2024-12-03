@@ -124,7 +124,6 @@ export class TrieAutomaton {
     this.changeWord(word, true)
   }
   private changeWord(word: string, removing: boolean) {
-
     // const newRoot = this.cloneNode(this._root)
 
     // find first confluence state
@@ -136,7 +135,8 @@ export class TrieAutomaton {
     let lastNode = this._root
     let mode: 1 | 2 | 3 = 1 // 1: redirect, 2: clone, 3: add
     const chain = [lastNode]
-    for (let i = 0; i < word.length; ++i) {
+    let i = 0
+    for (; i < word.length; ++i) {
       const char = word.charAt(i)
       const child = getTransition(lastNode, char)
       if (mode !== 3) {
@@ -167,7 +167,9 @@ export class TrieAutomaton {
       chain.push(lastNode)
     }
     if (removing) {
-      lastNode.final = false
+      if (i=== word.length) {
+        lastNode.final = false
+      }
     } else {
       lastNode.final = true
     }

@@ -4,7 +4,7 @@ import { TrieAutomaton, TrieNode } from './trie'
 
 export type DAWGPatterns<T> = [string, T][] | Map<string, T>
 
-type WalkState = [number, number, TrieNode | null, boolean]
+type WalkState = [number, number, TrieNode | null, boolean] //, string]
 interface Result {
   start: number,
   end: number
@@ -32,8 +32,7 @@ export function useDualDAWG(patterns: string[] | string) {
     let rightMostOfFinal = 0
     const result: Result[] = []
     walkSAM<WalkState>((samNode, state, queue)=>{
-      let [matched, matching, trieNode, final] = state
-
+      let [matched, matching, trieNode, final/*, prefix*/] = state
       // final state
       if (final) {
         const start = wordLength - matching
@@ -73,7 +72,7 @@ export function useDualDAWG(patterns: string[] | string) {
 
       // postpone final state
       if (matched > 0 && finals.get(samNode.id)) {
-        insertQueue(samNode, [matched, matching, null, true])
+        insertQueue(samNode, [matched, matching, null, true/*, prefix*/])
       }
       
       // trieNode === null -> partly matched only propagate to final state.
@@ -86,20 +85,20 @@ export function useDualDAWG(patterns: string[] | string) {
         for (const char of samNode.next.keys()) {
           const nextNode = trie.match(char, trieNode)
           if (nextNode) {
-            insertQueue(samNode.next.get(char)!, [matched, matching + 1, nextNode, false])
+            insertQueue(samNode.next.get(char)!, [matched, matching + 1, nextNode, false/*, prefix+char*/])
           } else {
             if (matched > 0) {
-              insertQueue(samNode.next.get(char)!, [matched, matching + 1, null, false])
+              insertQueue(samNode.next.get(char)!, [matched, matching + 1, null, false/*, prefix*/])
             }
           }
         }
       } else {
         for (const char of samNode.next.keys()) {
-          insertQueue(samNode.next.get(char)!, [matched, matching + 1, null, false])
+          insertQueue(samNode.next.get(char)!, [matched, matching + 1, null, false/*, prefix*/])
         }
       }
       return queue
-    }, [sam.root, [0, 0, trie.root, false]])
+    }, [sam.root, [0, 0, trie.root, false/*, ''*/]])
     return result
   }
   return {
@@ -107,23 +106,32 @@ export function useDualDAWG(patterns: string[] | string) {
     findWords
   }
 }
+
+// sort element by the start of substring
+// buggy, need futher test
 function createCompareByLeftPos(wordLength: number) {
   function compareByLeftPos(a: [SuffixNode, WalkState], b: [SuffixNode, WalkState]) {
+    const samA = a[0]
+    const stateA = a[1]
+    const samB = b[0]
+    const stateB = b[1]
     let value
-    if (a[1][3] !== b[1][3]) { // postpone final
-      if (a[1][3] === false) return -1
+    if (stateA[3] !== stateB[3]) { // postpone final
+      if (stateA[3] === false) return -1
       return 1
     }
-
+    if (samA.id !== samB.id) {
+      return samA.id - samB.id
+    }
     // sort by starting point of matching
-    // a[1][3] (final flag) is equal to b[1][3] here
+    // stateA[3] (final flag) is equal to stateB[3] here
     let leftA, leftB
-    if (a[1][3]) {
-      leftA = wordLength - a[1][1]
-      leftB = wordLength - b[1][1]
+    if (stateA[3]) {
+      leftA = wordLength - stateA[1]
+      leftB = wordLength - stateB[1]
     } else {
-      leftA = a[0].len - a[1][1]
-      leftB = b[0].len - b[1][1]
+      leftA = samA.len - stateA[1]
+      leftB = samB.len - stateB[1]
     }
 
     value = leftA - leftB

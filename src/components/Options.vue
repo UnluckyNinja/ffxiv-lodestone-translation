@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
 const {
   enableGoogleTranslate,
+  translateMode,
   customTranslations,
   matchSelectors,
   katakanaLanguage,
@@ -36,6 +37,14 @@ function removeSelector(k: number) {
   matchSelectors.value.splice(k)
 }
 
+function updateMode(value: boolean){
+  if(value) {
+    translateMode.value = 'full'
+  } else {
+    translateMode.value = 'katakana'
+  }
+}
+
 </script>
 
 <template>
@@ -49,23 +58,31 @@ function removeSelector(k: number) {
       <!-- simple options -->
       <div class="flex">
         <div class="flex-auto">
+          全文替换翻译
+        </div>
+        <div class="flex justify-end">
+          <Switch :checked="translateMode === 'full'" @update:checked="updateMode" />
+        </div>
+      </div>
+      <div class="flex">
+        <div class="flex-auto">
           启用片假名谷歌翻译
         </div>
         <div class="flex justify-end">
-          <Switch v-model:checked="enableGoogleTranslate" />
+          <Switch :disabled="translateMode === 'full'" v-model:checked="enableGoogleTranslate" />
         </div>
       </div>
       <div class="flex items-center">
         <div class="flex-auto">
-          谷歌翻译目标语言
+          片假名翻译目标语言
         </div>
         <div class="flex justify-end">
           <Tabs :default-value="katakanaLanguage">
             <TabsList class="grid grid-cols-2">
-              <TabsTrigger @click="katakanaLanguage = 'zh-CN'" class="data-[state=active]:bg-primary" value="zh-CN">
+              <TabsTrigger :disabled="translateMode === 'full'" @click="katakanaLanguage = 'zh-CN'" class="data-[state=active]:bg-primary" value="zh-CN">
                 中文
               </TabsTrigger>
-              <TabsTrigger @click="katakanaLanguage = 'en'" class="data-[state=active]:bg-primary" value="en">
+              <TabsTrigger :disabled="translateMode === 'full'" @click="katakanaLanguage = 'en'" class="data-[state=active]:bg-primary" value="en">
                 英文
               </TabsTrigger>
             </TabsList>

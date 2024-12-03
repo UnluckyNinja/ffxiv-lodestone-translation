@@ -5,8 +5,11 @@ import { useOptions } from './store'
 /** 
  * Credit: 片假名终结者 https://greasyfork.org/zh-CN/scripts/33268-katakana-terminator/ 
  */
-const queue: Map<string, HTMLElement[]> = reactive(new Map());  // {"カタカナ": [rtNodeA, rtNodeB]}
+const katakanaQueue: Map<string, HTMLElement[]> = new Map();  // {"カタカナ": [rtNodeA, rtNodeB]}
+const textQueue: Map<string, {replaceBack:(text:string)=>string, text: string, node:Text}[]> = new Map();
 var cachedTranslations: Map<string, string> = new Map();  // {"ターミネーター": "Terminator"}
+
+const TRANSLATED_CLASS = '__userscript_translated'
 
 export function scanTextNodes(node: Node) {
   const { matchSelectors } = useOptions()
@@ -24,6 +27,9 @@ export function scanTextNodes(node: Node) {
       if (target.tagName.toLowerCase() in excludeTags || target.isContentEditable) {
         return;
       }
+      if (target.tagName.toLowerCase() === 'span' && target.classList.contains(TRANSLATED_CLASS)) {
+        return
+      }
       return [...target.childNodes.values()].forEach(scanTextNodes);
 
     case Node.TEXT_NODE:
@@ -35,41 +41,83 @@ export function scanTextNodes(node: Node) {
         if (!matched) return
       }
       let text : Text | boolean = node as Text
-      addRuby(text);
+      transformNode(text);
   }
 }
 // function escapeRegex(str: string) {
 //   return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 // }
 
-export function addRuby(node: Text) {
+export function transformNode(node: Text) {
   if (!node.nodeValue) {
     return false;
   }
+  const {translateMode} = useOptions()
   const matches = matchKatakanaOrTerm(node.nodeValue)
-  if (matches.length === 0) return false
-  while (matches.length > 0) {
-    // create ruby & rt element
-    const match = matches.pop()!
-    const matchedValue = node.nodeValue.slice(match.start, match.end)
-    let ruby = document.createElement('ruby');
-    ruby.appendChild(document.createTextNode(matchedValue));
-    ruby.classList.add('userscript-translation-ruby');
-    let rt = document.createElement('rt');
-    rt.classList.add('userscript-translation-rt');
-    ruby.appendChild(rt);
+  
+  if (translateMode.value === 'full') {
+    // split text by matches, replace it with {{0~n}}, after translated, replace it back
+    const text = []
+    const words: string[] = []
+    let lastEnd = 0
+    for (const match of matches) {
+      if (match.type !== 'game') continue
+      const {start, end} = match
+      text.push(node.nodeValue.slice(lastEnd, start))
+      text.push(`{${words.length}}`)
+      words.push(node.nodeValue.slice(start, end))
+      lastEnd = end
+    }
+    text.push(node.nodeValue.slice(lastEnd))
+    const newText = text.join('')
+    const list = textQueue.get(newText) ?? []
+    list.push({
+      node,
+      text: newText,
+      replaceBack(str){
+        for (let i = 0; i < words.length; i++) {
+          str = str.replace(`{${i}}`, getTranslation(words[i])??'{missing translation}')
+        }
+        return str
+      }
+    })
+    textQueue.set(newText, list)
+    if(node.nodeValue.includes('クロの賞状')) {
+      // console.log('===text===')
+      // console.log(text)
+      // console.log('===words===')
+      // console.log(words)
+    }
+  } else {
+    if (matches.length === 0) return false
+    while (matches.length > 0) {
+      // create ruby & rt element
+      const match = matches.pop()!
+      const matchedValue = node.nodeValue.slice(match.start, match.end)
+      const ruby = insertRuby(matchedValue)
 
-    // Append the ruby title node to the pending-translation queue
-    const list = queue.get(matchedValue) ?? []
-    list.push(rt)
-    queue.set(matchedValue, list)
-
-    // <span>[startカナmiddleテストend]</span> =>
-    // <span>start<ruby>カナ<rt data-rt="Kana"></rt></ruby>[middleテストend]</span>
-    let after = node.splitText(match.start);
-    node.parentNode!.insertBefore(ruby, after);
-    after.nodeValue = after.nodeValue!.substring(match.end - match.start);
+      // <span>[startカナmiddleテストend]</span> =>
+      // <span>start<ruby>カナ<rt data-rt="Kana"></rt></ruby>[middleテストend]</span>
+      const after = node.splitText(match.start);
+      node.parentNode!.insertBefore(ruby, after);
+      after.nodeValue = after.nodeValue!.substring(match.end - match.start);
+    }
   }
+}
+
+function insertRuby(matchedValue: string){
+  const ruby = document.createElement('ruby');
+  ruby.appendChild(document.createTextNode(matchedValue));
+  ruby.classList.add('userscript-translation-ruby');
+  const rt = document.createElement('rt');
+  rt.classList.add('userscript-translation-rt');
+  ruby.appendChild(rt);
+
+  // Append the ruby title node to the pending-translation queue
+  const list = katakanaQueue.get(matchedValue) ?? []
+  list.push(rt)
+  katakanaQueue.set(matchedValue, list)
+  return ruby
 }
 
 // Split word list into chunks to limit the length of API requests
@@ -79,9 +127,9 @@ export async function translateTextNodesAlt() {
   let phraseCount = 0
   const chunkLimit = 50
   const chunk: string[] = []
-
-  const {enableGoogleTranslate, katakanaLanguage} = useOptions()
-
+  
+  const { enableGoogleTranslate, translateMode, katakanaLanguage } = useOptions()
+  const targetLang = translateMode.value === 'full' ? 'zh-CN' : katakanaLanguage.value
 
   async function flushChunk() {
     if (chunk.length === 0) return
@@ -89,17 +137,23 @@ export async function translateTextNodesAlt() {
       await new Promise((r)=>setTimeout(r, 1000-(Date.now() - lastRequestTime)))
     }
     apiRequestCount++;
-    await googleTranslate('ja', katakanaLanguage.value, chunk.slice());
+    await googleTranslate(translateMode.value, 'ja', targetLang, chunk.slice());
     lastRequestTime = Date.now()
     chunk.splice(0);
   }
+  let targetQueue
+  if (translateMode.value === 'full') {
+    targetQueue = textQueue
+  } else {
+    targetQueue = katakanaQueue
+  }
 
-  for (let phrase of queue.keys()) {
+  for (let phrase of targetQueue.keys()) {
 
     if (getTranslation(phrase)) {
-      updateRubyByCachedTranslations(phrase)
+      updateRubyByCachedTranslations(translateMode.value, phrase)
     } else {
-      if (!enableGoogleTranslate.value) continue
+      if (translateMode.value !== 'full' && !enableGoogleTranslate.value) continue
       phraseCount++
       chunk.push(phrase);
       if (chunk.length >= chunkLimit) {
@@ -116,7 +170,7 @@ export async function translateTextNodesAlt() {
 }
 
 // Google Dictionary API, https://github.com/ssut/py-googletrans/issues/268
-export async function googleTranslate(srcLang: string, destLang: string, phrases: string[]) {
+export async function googleTranslate(mode: string, srcLang: string, destLang: string, phrases: string[]) {
   // Prevent duplicate HTTP requests before the request completes
   phrases.forEach(function(phrase) {
       cachedTranslations.delete(phrase)
@@ -149,7 +203,7 @@ export async function googleTranslate(srcLang: string, destLang: string, phrases
               var translated = item,
                   original   = phrases[idx];
               cachedTranslations.set(original, translated)
-              updateRubyByCachedTranslations(original);
+              updateRubyByCachedTranslations(mode, original);
           });
       },
       onerror: function(dom) {
@@ -165,15 +219,33 @@ export function getTranslation(phrase: string){
 }
 
 // Clear the pending-translation queue
-export function updateRubyByCachedTranslations(phrase: string) {
+export function updateRubyByCachedTranslations(mode: string, phrase: string) {
   const translated = getTranslation(phrase)
   if (!translated) {
       return;
   }
-  queue.get(phrase)?.forEach((node)=>{
-      node.dataset.rt = translated
-  })
-  queue.delete(phrase)
+  if (mode === 'full') {
+    const list = textQueue.get(phrase)
+    if(!list) return
+    for (const item of list) {
+      // create a new span with TRANSLATED_CLASS, call replaceBack and substitute the node
+      const span = document.createElement('span')
+      span.classList.add(TRANSLATED_CLASS)
+      span.textContent = item.replaceBack(translated)
+      span.dataset.originalText = item.node.nodeValue ?? ''
+      if (import.meta.hot) {
+        span.dataset.text = item.text
+      }
+      item.node.parentElement!.insertBefore(span, item.node.nextSibling)
+      item.node.remove()
+    }
+    textQueue.delete(phrase)
+  } else {
+    katakanaQueue.get(phrase)?.forEach((node)=>{
+        node.dataset.rt = translated
+    })
+    katakanaQueue.delete(phrase)
+  }
 }
 
 // Watch newly added DOM nodes, and save them for later use

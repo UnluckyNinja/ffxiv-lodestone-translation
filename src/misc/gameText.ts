@@ -3,12 +3,17 @@ import _map from '../map.fflate?raw'
 import _trie from '../trie.fflate?raw'
 import { useDualDAWG } from './dawg';
 import { useOptions } from './store';
+import additionalTranslation from '@/translation'
 
 const map = JSON.parse(atou(_map)) as [string, string][]
 const gameTextMap = new Map(map)
 
 const engine = useDualDAWG(_trie)
 const katakanaRegex = /[\u30A1-\u30FA\u30FD-\u30FF][\u3099\u309A\u30A1-\u30FF]*[\u3099\u309A\u30A1-\u30FA\u30FC-\u30FF]|[\uFF66-\uFF6F\uFF71-\uFF9D][\uFF65-\uFF9F]*[\uFF66-\uFF9F]/y;
+
+Object.keys(additionalTranslation).forEach(w=>{
+  addWord(w)
+})
 
 const { customTranslations } = useOptions()
 Object.keys(customTranslations.value).forEach(w=>{
@@ -25,13 +30,10 @@ export function matchKatakanaOrTerm(text: string) {
   const list = engine.findWords(text)
   const lengthMap = new Map(list.map(it=>[it.start, it.end-it.start]))
   const results: MatchResult[] = []
-  const {enableGoogleTranslate} = useOptions()
   for (let i = 0; i < text.length; ++i) {
     katakanaRegex.lastIndex = i
     let match = null
-    if (enableGoogleTranslate.value) {
-      match = katakanaRegex.exec(text)
-    }
+    match = katakanaRegex.exec(text)
     const length = lengthMap.get(i)
     if (match) {
       if (length && length >= match[0].length) { // -> gameText > match, pick gameText
@@ -42,7 +44,7 @@ export function matchKatakanaOrTerm(text: string) {
         })
         i = i + length
         --i
-      } else { // -> match && !gameText, pick match
+      } else { // -> !gameText || gameText < match, pick match
         results.push({
           type: 'katakana',
           start: i,
@@ -52,7 +54,7 @@ export function matchKatakanaOrTerm(text: string) {
         --i
       }
     } else {
-      if (length && length > 0) { // -> !match && gameText, pick match
+      if (length && length > 0) { // -> !match && gameText, pick gameText
         results.push({
           type: 'game',
           start: i,
@@ -78,5 +80,5 @@ export function removeWord(word: string) {
 export function getBuiltinTranslation(key: string){
   // gametext
   // customTranslation
-  return customTranslations.value[key] || gameTextMap.get(key)
+  return customTranslations.value[key] || additionalTranslation[key] || gameTextMap.get(key)
 }

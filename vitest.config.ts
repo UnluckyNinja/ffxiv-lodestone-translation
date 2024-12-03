@@ -1,6 +1,24 @@
+import { resolve } from 'path'
 import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+import AutoImport from 'unplugin-auto-import/vite'
+import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
+  plugins: [
+    vue(),
+    AutoImport({
+      imports: [
+        'vue',
+        '@vueuse/core'
+      ],
+    }),
+  ],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
   test: {
     watch: false,
     globalSetup: './global-setup.ts',
@@ -36,5 +54,8 @@ export default defineConfig({
         singleFork: true,
       },
     },
+    alias: {
+      '$': resolve('./__mocks__/$.ts')
+    }
   },
 })
