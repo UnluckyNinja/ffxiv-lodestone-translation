@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/compare/v1.1.2...v1.2.0) (2024-12-03)
+
+
+### Features
+
+* added full translate mode ([e3bb9d9](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/commit/e3bb9d9b7e137d0dbcc14f20159ffe897cfd5d5d))
+
+
+### Bug Fixes
+
+* fix word searching ouput wrong result ([2d0e6a2](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/commit/2d0e6a2bec2068b3ddbb62055f02a30af93c249c))
+
 ## [1.1.2](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/compare/v1.1.1...v1.1.2) (2024-12-02)
 
 
