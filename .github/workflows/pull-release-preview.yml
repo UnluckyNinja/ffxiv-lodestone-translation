@@ -16,7 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_VERSION: 22
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Notify about starting this deployment
         id: comment
