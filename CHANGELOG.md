@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/compare/v1.2.0...v1.3.0) (2025-03-24)
+
+
+### Features
+
+* update to 7.1 ([52021d1](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/commit/52021d1cb34de14ab34652ac16cb0ddf08ce41ad))
+
 ## [1.2.0](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/compare/v1.1.2...v1.2.0) (2024-12-03)
 
 
