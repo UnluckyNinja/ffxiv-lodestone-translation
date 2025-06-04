@@ -1,7 +1,10 @@
 import { expect, test } from 'vitest'
 import { useDualDAWG } from '.'
-import map from '../../map.fflate?raw'
-import { atou } from '../utils'
+import map from '../../assets/map_jp_itemonly.fflate?url'
+
+import { strFromU8, unzlibSync } from 'fflate'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
 
 test('useDualDAWG 1', ()=>{
   const text = 'abcdea'
@@ -43,15 +46,18 @@ test('useDualDAWG 2', ()=>{
   `)
 })
 
-test('useDualDAWG big data', ()=>{
-  const entries = JSON.parse(atou(map)) as [string, string][]
+test('useDualDAWG big data', async ()=>{
+
+  const buffer = await readFile(path.resolve(process.cwd(), '.'+map))
+
+  const entries = JSON.parse(strFromU8(unzlibSync(new Uint8Array(buffer)))) as [string, string][]
   const text = entries[0][0]
   const words = entries.slice(0).map(it=>it[0])
   const { findWords } = useDualDAWG(words)
   const result = findWords(text)
   expect(result.map(it=>text.slice(it.start, it.end))).toMatchInlineSnapshot(`
     [
-      "ジャンプ",
+      "ファイアシャード",
     ]
   `)
 })

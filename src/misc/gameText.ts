@@ -59,12 +59,10 @@ export const useGameText = createGlobalState(() => {
   let engine = useDualDAWG([])
 
   // watch([sourceLanguage, datasetType], async ([lang, dataset])=>{
-  ;(async function(){
+  function loadResources(entries: [string, string][], trie: string[] | string | ArrayBuffer){
     isLoading.value = true
-    gameTextMap = new Map(await getResource('map', sourceLanguage.value, datasetType.value))
-    engine = useDualDAWG(await getResource('trie', sourceLanguage.value, datasetType.value, true))
-    isLoading.value = false
-
+    gameTextMap = new Map(entries)
+    engine = useDualDAWG(trie)
     Object.keys(additionalTranslation).forEach(w => {
       addWord(w)
     })
@@ -72,8 +70,19 @@ export const useGameText = createGlobalState(() => {
     Object.keys(customTranslations.value).forEach(w => {
       addWord(w)
     })
-  })()
+  
+    isLoading.value = false
+  }
   // }, {immediate: true})
+  if (process) {
+    // node environment & when testing
+    
+  } else {
+    (async function(){
+      loadResources(await getResource('map', sourceLanguage.value, datasetType.value), await getResource('trie', sourceLanguage.value, datasetType.value, true))
+    })()
+  }
+
 
   const katakanaRegex = /[\u30A1-\u30FA\u30FD-\u30FF][\u3099\u309A\u30A1-\u30FF]*[\u3099\u309A\u30A1-\u30FA\u30FC-\u30FF]|[\uFF66-\uFF6F\uFF71-\uFF9D][\uFF65-\uFF9F]*[\uFF66-\uFF9F]/y;
 
@@ -136,6 +145,7 @@ export const useGameText = createGlobalState(() => {
   }
   return {
     isLoading,
+    loadResources,
     matchKatakanaOrTerm,
     addWord,
     removeWord,
