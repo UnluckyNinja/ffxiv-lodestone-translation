@@ -14,18 +14,22 @@ const storage: StorageLike = {
 }
 export const useOptions = createGlobalState(
   () => {
-    const enableGoogleTranslate = useStorage('enableGoogleTranslate', true, storage)
-    const translateMode = useStorage('translateMode', 'full', storage)
+    const enableGoogleTranslate = useStorage('enableGoogleTranslate', false, storage)
+    const translateMode = useStorage<'full' | 'katakana'>('translateMode', 'katakana', storage)
     const customTranslations = useStorage('customTranslations', {} as Record<string, string>, storage)
     const matchSelectors = useStorage('matchSelectors', ['article *'] as string[], storage)
     const katakanaLanguage = useStorage('googleLanguage', 'en', storage)
+    const sourceLanguage = useStorage<'jp' | 'en'>('source-language', 'jp', storage)
+    const datasetType = useStorage<'full' | 'itemonly'>('dataset-type', 'itemonly', storage)
 
     function resetOptions(){
-      enableGoogleTranslate.value = true
-      translateMode.value = 'full'
+      enableGoogleTranslate.value = false
+      translateMode.value = 'katakana'
       customTranslations.value = {}
       matchSelectors.value = ['article *']
       katakanaLanguage.value = 'en'
+      sourceLanguage.value = 'jp'
+      datasetType.value = 'itemonly'
     }
 
     return {
@@ -34,6 +38,8 @@ export const useOptions = createGlobalState(
       customTranslations,
       matchSelectors,
       katakanaLanguage,
+      sourceLanguage,
+      datasetType,
       resetOptions
     }
   }

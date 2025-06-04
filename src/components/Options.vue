@@ -12,6 +12,9 @@ const {
   customTranslations,
   matchSelectors,
   katakanaLanguage,
+  sourceLanguage,
+  datasetType,
+  resetOptions: _resetOptions,
 } = useOptions()
 
 const matchFrom = ref('')
@@ -45,6 +48,21 @@ function updateMode(value: boolean){
   }
 }
 
+const firstClickReset = ref(false)
+const resetButton = useTemplateRef('resetButton')
+onClickOutside(resetButton, ()=>{
+  firstClickReset.value = false
+})
+
+function resetOptions(){
+  if (!firstClickReset.value) {
+    firstClickReset.value = true
+    return
+  }
+  _resetOptions()
+  firstClickReset.value = false
+}
+
 </script>
 
 <template>
@@ -55,10 +73,45 @@ function updateMode(value: boolean){
       </CardTitle>
     </CardHeader>
     <CardContent class="space-y-xs">
+      <div class="text-center text-red-300">修改完毕后请手动刷新页面</div>
       <!-- simple options -->
+      <div class="flex items-center">
+        <div class="flex-auto">
+          原始语言
+        </div>
+        <div class="flex justify-end">
+          <Tabs :default-value="sourceLanguage">
+            <TabsList class="grid grid-cols-2">
+              <TabsTrigger @click="sourceLanguage = 'jp'" class="data-[state=active]:bg-primary" value="jp">
+                日文
+              </TabsTrigger>
+              <TabsTrigger @click="sourceLanguage = 'en'" class="data-[state=active]:bg-primary" value="en">
+                英文
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
+      <div class="flex items-center">
+        <div class="flex-auto">
+          词汇数据源类型
+        </div>
+        <div class="flex justify-end">
+          <Tabs :default-value="datasetType">
+            <TabsList class="grid grid-cols-2">
+              <TabsTrigger @click="datasetType = 'itemonly'" class="data-[state=active]:bg-primary" value="itemonly">
+                仅物品
+              </TabsTrigger>
+              <TabsTrigger @click="datasetType = 'full'" class="data-[state=active]:bg-primary" value="full">
+                全部
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
       <div class="flex">
         <div class="flex-auto">
-          全文替换翻译
+          全文替换翻译（仅日译中）
         </div>
         <div class="flex justify-end">
           <Switch :checked="translateMode === 'full'" @update:checked="updateMode" />
@@ -141,6 +194,12 @@ function updateMode(value: boolean){
             <div class="i-carbon-add text-xl"></div>
           </Button>
         </div>
+      </div>
+      <hr class="border-gray border-solid border-t bg-none">
+      <div class="text-center">
+        <Button ref="resetButton" variant="destructive" class="text-foreground"  @click="resetOptions">
+          {{ firstClickReset ? '确定重置？' :'重置全部选项'}}
+        </Button>
       </div>
     </CardContent>
   </Card>

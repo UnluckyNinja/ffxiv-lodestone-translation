@@ -1,3 +1,4 @@
+import { strFromU8, unzlibSync } from 'fflate'
 import { atou, sortWordsByLocale, utoa } from '../utils'
 import { SortedMap } from './SortedMap'
 import Tree from "splaytree"
@@ -273,8 +274,16 @@ export class TrieAutomaton {
     return utoa(allText)
   }
 
-  static from(text: string): TrieAutomaton {
-    const parsed: { rootID: number, states: ([boolean, [string, number][]] | null)[]} = JSON.parse(atou(text))
+  static from(text: string | ArrayBuffer): TrieAutomaton {
+    let json: { rootID: number, states: ([boolean, [string, number][]] | null)[]}
+    if (typeof text === 'string') {
+      json = JSON.parse(atou(text))
+    } else {
+      const unzipped = unzlibSync(new Uint8Array(text))
+      json = JSON.parse(strFromU8(unzipped))
+    }
+
+    const parsed: { rootID: number, states: ([boolean, [string, number][]] | null)[]} = json
     if (!parsed || !Object.hasOwn(parsed,'rootID') || !parsed.states || !parsed.states.length) throw new Error('Incorrect content of serialized text.')
 
     const trie = new TrieAutomaton()

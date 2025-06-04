@@ -28,7 +28,10 @@ export default defineConfig((config)=>({
         name: 'FF14 Lodestone 自动翻译',
         namespace: 'unlucky.ninja',
         author: 'UnluckyNinja',
-        match: ['https://jp.finalfantasyxiv.com/lodestone/topics/detail/*'],
+        match: [
+          'https://jp.finalfantasyxiv.com/lodestone/topics/detail/*',
+          'https://na.finalfantasyxiv.com/lodestone/topics/detail/*',
+        ],
         connect: [
           'translate.googleapis.com'
         ]

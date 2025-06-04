@@ -4,7 +4,9 @@ import styleCss from './style.css?inline'
 import unoCss from 'virtual:uno.css?inline'
 import resetCss from '@unocss/reset/tailwind.css?inline'
 import App from './App.vue'
-import { mutationHandler, rescanTextNodes, scanTextNodes } from './misc/scanner'
+import { mutationHandler, rescanTextNodes } from './misc/scanner'
+
+console.info('FF14 Lodestone 自动翻译: 加载中……')
 
 const app = createApp(App)
 const wrapper = document.createElement('div')
@@ -29,7 +31,7 @@ var observer = new MutationObserver(mutationHandler);
 
 observer.observe(document.body, {childList: true, subtree: true});
 
-scanTextNodes(document.body)
+// scanTextNodes(document.body)
 
 // Limit the frequency of API requests
 rescanTextNodes(observer);

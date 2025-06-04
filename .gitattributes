@@ -1,3 +1,3 @@
 * text=auto eol=lf
 
-*.fflate -diff linguist-generated=true
+*.fflate binary

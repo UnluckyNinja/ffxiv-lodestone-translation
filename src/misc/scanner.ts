@@ -1,5 +1,5 @@
 import { GM } from '$';
-import { getBuiltinTranslation, matchKatakanaOrTerm } from './gameText';
+import { useGameText } from './gameText';
 import { useOptions } from './store'
 
 /** 
@@ -10,6 +10,8 @@ const textQueue: Map<string, {replaceBack:(text:string)=>string, text: string, n
 var cachedTranslations: Map<string, string> = new Map();  // {"ターミネーター": "Terminator"}
 
 const TRANSLATED_CLASS = '__userscript_translated'
+
+const {isLoading, getBuiltinTranslation, matchKatakanaOrTerm} = useGameText()
 
 export function scanTextNodes(node: Node) {
   const { matchSelectors } = useOptions()
@@ -257,7 +259,15 @@ export function mutationHandler(mutationList: MutationRecord[]) {
   });
 }
 
+let isFirstRender = true
+
 export async function rescanTextNodes(observer: MutationObserver) {
+    if (isFirstRender) {
+      await until(isLoading).toBe(false)
+      console.info('FF14 Lodestone 自动翻译: 加载完毕')
+      isFirstRender = false
+      scanTextNodes(document.body)
+    }
     // Deplete buffered mutations
     mutationHandler(observer.takeRecords());
 
