@@ -74,10 +74,7 @@ export const useGameText = createGlobalState(() => {
     isLoading.value = false
   }
   // }, {immediate: true})
-  if (process) {
-    // node environment & when testing
-    
-  } else {
+  if (typeof window !== 'undefined') {
     (async function(){
       loadResources(await getResource('map', sourceLanguage.value, datasetType.value), await getResource('trie', sourceLanguage.value, datasetType.value, true))
     })()
