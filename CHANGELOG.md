@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/compare/v1.3.0...v1.4.0) (2025-06-04)
+
+
+### Features
+
+* en support & item only mode ([28c9adb](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/commit/28c9adb9c6b0e63c7b66fd8c3ec1200305353fb4))
+
+
+### Bug Fixes
+
+* fix wrong environment check ([e850b5b](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/commit/e850b5bcb764fe1e3403a403e89cf168f015fc6f))
+* tests ([23d3858](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/commit/23d3858d73f00ff52e0d49b4a0fcfb0b1a1992aa))
+
 ## [1.3.0](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/compare/v1.2.0...v1.3.0) (2025-03-24)
 
 
