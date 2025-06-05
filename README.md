@@ -5,7 +5,7 @@
 ## 安装使用
 需要油猴：https://www.tampermonkey.net/index.php?locale=zh
 
-安装脚本：[Latest Github Releases](/UnluckyNinja/ffxiv-lodestone-translation/releases/latest)
+安装脚本：[Latest Github Releases](https://github.com/UnluckyNinja/ffxiv-lodestone-translation/releases/latest)
 
 默认只匹配以下地址
 
